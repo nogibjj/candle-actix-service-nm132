@@ -33,5 +33,43 @@
         <a href="/download" class="button">Download</a>
         <a href="/run" class="button">Run</a>
     </div>
+
+    <!-- ... existing HTML content ... -->
+
+<!-- Model execution form -->
+<div>
+    <form id="modelForm">
+        <label for="modelSelect">Choose a model:</label>
+        <select id="modelSelect" name="model"></select>
+
+        <input type="text" id="modelPrompt" name="prompt" placeholder="Enter prompt">
+        <input type="submit" value="Submit">
+    </form>
+    <div id="responseOutput"></div>
+</div>
+
+<script>
+    // Load models into dropdown
+    window.onload = async function() {
+        const response = await fetch('/models');
+        const models = await response.json();
+        const select = document.getElementById('modelSelect');
+        models.forEach(model => {
+            const option = new Option(model, model);
+            select.add(option);
+        });
+    };
+
+    // Handle form submission
+    document.getElementById('modelForm').onsubmit = async function(event) {
+        event.preventDefault();
+        const model = document.getElementById('modelSelect').value;
+        const prompt = document.getElementById('modelPrompt').value;
+        const response = await fetch('/execute-model', { /* ... */ });
+        const result = await response.text();
+        document.getElementById('responseOutput').textContent = result;
+    };
+</script>
+
 </body>
 </html>
