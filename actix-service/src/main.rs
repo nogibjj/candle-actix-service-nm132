@@ -1,5 +1,14 @@
 use actix_web::{web, App, HttpServer, Responder, HttpResponse, web::Data};
 use std::fs;
+use serde_derive::Deserialize;
+use std::process::Command;
+
+#[derive(Deserialize)]
+struct ExecuteModel {
+    model: String,
+    prompt: String,
+}
+
 
 // Function to read models from the directory
 fn read_models() -> Vec<String> {
@@ -34,6 +43,53 @@ async fn home() -> impl Responder {
     HttpResponse::Ok().content_type("text/html").body(include_str!("home.html"))
 }
 
+/*execute model on submit
+
+async fn run_model(query: web::Query<ModelQuery>) -> impl Responder {
+    let args: Vec<&str> = query.prompt.split_whitespace().collect();
+    if args.is_empty() {
+        return HttpResponse::BadRequest().body("Prompt format is incorrect.");
+    }
+    
+    let output = Command::new("./models/".to_owned() + args[0])
+        .args(&args[1..])
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => {
+            let result = String::from_utf8_lossy(&output.stdout);
+            HttpResponse::Ok().json(result.to_string())
+        },
+        Ok(output) => {
+            let error = String::from_utf8_lossy(&output.stderr);
+            HttpResponse::InternalServerError().body(error.to_string())
+        },
+        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
+    }
+}*/
+
+// Handler for executing a model command
+async fn execute_command(form: web::Form<ExecuteModel>) -> impl Responder {
+    let model_path = format!("./models/{}", form.model);
+    let output = Command::new(model_path)
+        .arg("--prompt")
+        .arg(&form.prompt)
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => {
+            HttpResponse::Ok().content_type("text/plain").body(output.stdout)
+        },
+        Ok(output) => {
+            HttpResponse::BadRequest().content_type("text/plain").body(output.stderr)
+        },
+        Err(e) => {
+            HttpResponse::InternalServerError().content_type("text/plain").body(format!("{}", e))
+        },
+    }
+}
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let models = Data::new(read_models()); // Wrap models in Data
@@ -45,8 +101,9 @@ async fn main() -> std::io::Result<()> {
             .route("/models", web::get().to(get_models))
             .route("/download", web::get().to(download_binary))
             .route("/run", web::get().to(run_aws_spot_instance))
+            .route("/execute-command", web::post().to(execute_command))
     })
-    .bind("127.0.0.1:8080")?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }

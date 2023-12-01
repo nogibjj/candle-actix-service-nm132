@@ -59,15 +59,47 @@
         });
     };
 
-    // Handle form submission
+    /* Handle form submission
     document.getElementById('modelForm').onsubmit = async function(event) {
         event.preventDefault();
         const model = document.getElementById('modelSelect').value;
         const prompt = document.getElementById('modelPrompt').value;
-        const response = await fetch('/execute-model', { /* ... */ });
+        const response = await fetch('/execute-model', { /* ...  });
         const result = await response.text();
         document.getElementById('responseOutput').textContent = result;
-    };
+    };*/
+
+    /* Handle form submission
+    
+    document.getElementById('modelForm').onsubmit = async function(event) {
+    event.preventDefault();
+    const model = document.getElementById('modelSelect').value;
+    const prompt = document.getElementById('modelPrompt').value;
+    const queryString = `prompt=${encodeURIComponent(model + ' --prompt "' + prompt + '"')}`;
+    const response = await fetch('/run-model?' + queryString);
+    const result = await response.json();
+    document.getElementById('responseOutput').textContent = JSON.stringify(result, null, 2);
+};*/
+
+document.getElementById('modelForm').onsubmit = async function(event) {
+    event.preventDefault();
+    const model = document.getElementById('modelSelect').value;
+    const prompt = document.getElementById('modelPrompt').value;
+
+    const response = await fetch('/execute-command', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `model=${encodeURIComponent(model)}&prompt=${encodeURIComponent(prompt)}`,
+    });
+
+    const result = await response.text();
+    document.getElementById('responseOutput').textContent = result;
+};
+
+
+
 </script>
 
 </body>
