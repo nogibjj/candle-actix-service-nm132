@@ -2,6 +2,7 @@ use actix_web::{web, App, HttpServer, Responder, HttpResponse, web::Data};
 use std::fs;
 use serde_derive::Deserialize;
 use std::process::Command;
+//use std::fs::{self, Permissions};
 
 #[derive(Deserialize)]
 struct ExecuteModel {
@@ -69,12 +70,23 @@ async fn run_model(query: web::Query<ModelQuery>) -> impl Responder {
 }*/
 
 // Handler for executing a model command
+// Handler for executing a model command
 async fn execute_command(form: web::Form<ExecuteModel>) -> impl Responder {
     let model_path = format!("./models/{}", form.model);
+    // Give run permission on file
+    let _resp = Command::new("chmod")
+        .arg("-R")
+        .arg("755")
+        .arg("./models/")
+        .spawn()
+        .expect("Failed to give execution permissions");
+
     let output = Command::new(model_path)
         .arg("--prompt")
         .arg(&form.prompt)
         .output();
+
+    println!{"{:?}",output};
 
     match output {
         Ok(output) if output.status.success() => {
@@ -88,8 +100,6 @@ async fn execute_command(form: web::Form<ExecuteModel>) -> impl Responder {
         },
     }
 }
-
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let models = Data::new(read_models()); // Wrap models in Data
